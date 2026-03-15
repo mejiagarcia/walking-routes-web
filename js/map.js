@@ -41,7 +41,10 @@ window.RouteApp.Map = {
       maxZoom: 20
     }).addTo(this._map);
 
-    // Try to center on user location
+  },
+
+  centerOnUserLocation: function() {
+    var self = this;
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(position) {

@@ -323,6 +323,7 @@ window.RouteApp.UI = {
       self._showLoading(false);
       RouteApp.Map.drawRoutes(result);
       self.updateRouteDisplay(result);
+      self._saveLastRoute(origin, destination, waypoints);
     }).catch(function(err) {
       self._showLoading(false);
       console.error('Routing error:', err);
@@ -447,6 +448,57 @@ window.RouteApp.UI = {
   _hideError: function() {
     this._elements.errorMessage.classList.remove('visible');
     clearTimeout(this._errorTimer);
+  },
+
+  _saveLastRoute: function(origin, destination, waypoints) {
+    try {
+      var data = {
+        origin: origin,
+        destination: destination,
+        waypoints: waypoints || [],
+        originName: this._elements.originInput.value,
+        destinationName: this._elements.destinationInput.value
+      };
+      localStorage.setItem('walkroute_last', JSON.stringify(data));
+    } catch (e) { /* quota exceeded or private browsing */ }
+  },
+
+  restoreLastRoute: function() {
+    try {
+      var raw = localStorage.getItem('walkroute_last');
+      if (!raw) return false;
+      var data = JSON.parse(raw);
+      if (!data.origin || !data.destination) return false;
+
+      // Set markers
+      RouteApp.Map.setMarker('origin', data.origin.lat, data.origin.lng);
+      RouteApp.Map.setMarker('destination', data.destination.lat, data.destination.lng);
+
+      // Fill input fields
+      this._elements.originInput.value = data.originName || '';
+      this._elements.destinationInput.value = data.destinationName || '';
+
+      // Restore waypoints
+      if (data.waypoints && data.waypoints.length > 0) {
+        for (var i = 0; i < data.waypoints.length; i++) {
+          this._addWaypointInput();
+          var wp = data.waypoints[i];
+          RouteApp.Map.addWaypoint(wp.lat, wp.lng);
+          var wpInput = document.querySelector('#waypoint-row-' + i + ' .waypoint-input');
+          if (wpInput) {
+            RouteApp.Geocoding.reverse(wp.lat, wp.lng).then((function(input) {
+              return function(name) { input.value = name; };
+            })(wpInput));
+          }
+        }
+      }
+
+      // Calculate the route
+      this._handleCalculate();
+      return true;
+    } catch (e) {
+      return false;
+    }
   },
 
   _handleClear: function() {

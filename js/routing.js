@@ -21,7 +21,7 @@ window.RouteApp.Routing = {
     var body = {
       locations: locations,
       costing: 'pedestrian',
-      directions_options: { units: 'kilometers', language: 'en' },
+      directions_options: { units: 'kilometers', language: RouteApp.I18n ? RouteApp.I18n.valhallaLang() : 'en-US' },
       alternates: 2
     };
 

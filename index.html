@@ -3,98 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WalkRoute - Pedestrian Route Calculator</title>
+  <title>WalkRoute</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <div id="sidebar">
-    <div class="app-title">
-      <span class="icon">&#x1F6B6;</span>
-      <span>WalkRoute</span>
-    </div>
+  <!-- Full-screen map -->
+  <div id="map-container"></div>
 
-    <div class="input-group">
-      <div class="input-row">
+  <!-- Floating loading overlay -->
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Floating panels (left side) -->
+  <div id="left-panels">
+
+    <!-- Search panel -->
+    <div id="search-panel" class="glass-card">
+      <div class="app-title">
+        <i data-lucide="footprints" class="app-icon"></i>
+        <span>WalkRoute</span>
+        <div class="lang-switcher">
+          <button data-lang="en">EN</button>
+          <button data-lang="es">ES</button>
+          <button data-lang="ca">CA</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-row">
+          <div class="input-wrapper">
+            <i data-lucide="map-pin" class="input-icon input-icon-origin"></i>
+            <input type="text" id="origin-input" data-i18n-placeholder="origin" placeholder="Origin" autocomplete="off" />
+            <div class="search-results" id="search-results-origin"></div>
+          </div>
+          <button class="btn-icon" id="btn-my-location" title="Use my location">
+            <i data-lucide="locate-fixed"></i>
+          </button>
+        </div>
+
+        <div id="waypoints-container"></div>
+
         <div class="input-wrapper">
-          <input type="text" id="origin-input" placeholder="Origin" autocomplete="off" />
-          <div class="search-results" id="search-results-origin"></div>
+          <i data-lucide="flag" class="input-icon input-icon-dest"></i>
+          <input type="text" id="destination-input" data-i18n-placeholder="destination" placeholder="Destination" autocomplete="off" />
+          <div class="search-results" id="search-results-destination"></div>
         </div>
-        <button class="btn-icon" id="btn-my-location" title="Use my location">&#x1F4CD;</button>
       </div>
 
-      <div id="waypoints-container"></div>
+      <button class="btn-text" id="btn-add-stop">
+        <i data-lucide="plus-circle"></i>
+        <span data-i18n="addStop">Add stop</span>
+      </button>
 
-      <div class="input-wrapper">
-        <input type="text" id="destination-input" placeholder="Destination" autocomplete="off" />
-        <div class="search-results" id="search-results-destination"></div>
+      <div class="actions-row">
+        <button class="btn-primary" id="btn-calculate" data-i18n="calculate">Calculate Route</button>
+        <button class="btn-outline" id="btn-clear" data-i18n="clear">Clear</button>
       </div>
-    </div>
 
-    <button class="btn-text" id="btn-add-stop">+ Add stop</button>
-
-    <div class="actions-row">
-      <button class="btn-primary" id="btn-calculate">Calculate Route</button>
-      <button class="btn-outline" id="btn-clear">Clear</button>
-    </div>
-
-    <div id="route-alternatives" class="hidden"></div>
-
-    <div id="route-summary" class="hidden">
-      <div class="summary-title">Walking Summary</div>
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="metric-icon">&#x1F4CF;</span>
-          <span class="metric-value" id="route-distance">—</span>
-          <span class="metric-label">Distance</span>
-        </div>
-        <div class="summary-item">
-          <span class="metric-icon">&#x1F6B6;</span>
-          <span class="metric-value" id="route-duration">—</span>
-          <span class="metric-label">Walking Time</span>
-        </div>
-        <div class="summary-item">
-          <span class="metric-icon">&#x1F463;</span>
-          <span class="metric-value" id="route-steps-count">—</span>
-          <span class="metric-label">Est. Steps</span>
-        </div>
-        <div class="summary-item">
-          <span class="metric-icon">&#x1F525;</span>
-          <span class="metric-value" id="route-calories">—</span>
-          <span class="metric-label">Calories</span>
+      <div id="app-info">
+        <button class="btn-info-toggle" id="btn-info-toggle" data-i18n="aboutTitle">About WalkRoute</button>
+        <div class="info-content hidden" id="info-content">
+          <p data-i18n="aboutDesc">A free, privacy-first pedestrian router. No API keys, no billing, no tracking.</p>
+          <ul>
+            <li><strong data-i18n="featPaths">Real pedestrian paths</strong> — <span data-i18n="featPathsDesc">sidewalks, footpaths, parks via Valhalla routing</span></li>
+            <li><strong data-i18n="featMetrics">Walking metrics</strong> — <span data-i18n="featMetricsDesc">steps and calories, not just distance</span></li>
+            <li><strong data-i18n="featMultistop">Multi-stop</strong> — <span data-i18n="featMultistopDesc">up to 5 intermediate stops</span></li>
+            <li><strong data-i18n="featAlt">Alternatives</strong> — <span data-i18n="featAltDesc">compare up to 3 walking paths</span></li>
+            <li><strong data-i18n="featClient">100% client-side</strong> — <span data-i18n="featClientDesc">no server, no accounts</span></li>
+            <li><strong data-i18n="featWorld">Worldwide</strong> — <span data-i18n="featWorldDesc">works anywhere OpenStreetMap has data</span></li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <div id="route-instructions"></div>
+    <!-- Results panel (shown after route calculation) -->
+    <div id="results-panel" class="glass-card hidden">
 
-    <div id="app-info">
-      <button class="btn-info-toggle" id="btn-info-toggle">About this app</button>
-      <div class="info-content hidden" id="info-content">
-        <p>WalkRoute is a free, privacy-first pedestrian router. Unlike Google Maps, it uses no API keys, no billing, and no tracking.</p>
-        <ul>
-          <li><strong>Pedestrian-optimized paths</strong> — routes follow sidewalks, footpaths, park trails, pedestrian zones, and crosswalks via Valhalla's pedestrian routing</li>
-          <li><strong>Walking metrics</strong> — estimated steps and calories, not just distance and time</li>
-          <li><strong>Multi-stop planning</strong> — add up to 5 intermediate stops for errands or walks</li>
-          <li><strong>Alternative routes</strong> — compare up to 3 different walking paths</li>
-          <li><strong>100% client-side</strong> — no server, no accounts, runs from static files</li>
-          <li><strong>Global coverage</strong> — works anywhere OpenStreetMap has data (worldwide)</li>
-        </ul>
+      <div id="route-alternatives"></div>
+
+      <div id="route-summary" class="hidden">
+        <div class="summary-hero">
+          <span class="hero-value" id="route-duration">—</span>
+          <span class="hero-label" data-i18n="walkingTime">walking time</span>
+        </div>
+        <div class="summary-row">
+          <div class="summary-item">
+            <i data-lucide="route" class="metric-icon"></i>
+            <span class="metric-value" id="route-distance">—</span>
+            <span class="metric-label" data-i18n="distance">Distance</span>
+          </div>
+          <div class="summary-item">
+            <i data-lucide="footprints" class="metric-icon"></i>
+            <span class="metric-value" id="route-steps-count">—</span>
+            <span class="metric-label" data-i18n="steps">Steps</span>
+          </div>
+          <div class="summary-item">
+            <i data-lucide="flame" class="metric-icon"></i>
+            <span class="metric-value" id="route-calories">—</span>
+            <span class="metric-label" data-i18n="cal">Cal</span>
+          </div>
+        </div>
       </div>
+
+      <div id="route-instructions"></div>
+
     </div>
   </div>
 
-  <div id="map-container">
-    <div id="loading-indicator">
-      <div class="spinner"></div>
-    </div>
-  </div>
+  <!-- History chip (top-right) -->
+  <button id="history-chip" class="glass-card hidden">
+    <i data-lucide="clock-3"></i>
+    <span data-i18n="lastRoute">Last route</span>
+  </button>
 
   <div id="error-message"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/map.js"></script>
   <script src="js/routing.js"></script>
   <script src="js/geocoding.js"></script>

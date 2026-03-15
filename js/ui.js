@@ -8,6 +8,7 @@ window.RouteApp.UI = {
   init: function() {
     this._cacheElements();
     this._bindEvents();
+    this._updateHistoryChip();
   },
 
   _cacheElements: function() {
@@ -18,6 +19,7 @@ window.RouteApp.UI = {
       btnCalculate: document.getElementById('btn-calculate'),
       btnClear: document.getElementById('btn-clear'),
       btnAddStop: document.getElementById('btn-add-stop'),
+      resultsPanel: document.getElementById('results-panel'),
       routeSummary: document.getElementById('route-summary'),
       routeDistance: document.getElementById('route-distance'),
       routeDuration: document.getElementById('route-duration'),
@@ -29,7 +31,8 @@ window.RouteApp.UI = {
       searchResultsOrigin: document.getElementById('search-results-origin'),
       searchResultsDestination: document.getElementById('search-results-destination'),
       loadingIndicator: document.getElementById('loading-indicator'),
-      errorMessage: document.getElementById('error-message')
+      errorMessage: document.getElementById('error-message'),
+      historyChip: document.getElementById('history-chip')
     };
   },
 
@@ -69,6 +72,12 @@ window.RouteApp.UI = {
       self._addWaypointInput();
     });
 
+    // History chip
+    this._elements.historyChip.addEventListener('click', function() {
+      self._elements.historyChip.classList.add('hidden');
+      self.restoreLastRoute();
+    });
+
     // Info toggle
     var btnInfo = document.getElementById('btn-info-toggle');
     var infoContent = document.getElementById('info-content');
@@ -97,6 +106,19 @@ window.RouteApp.UI = {
         self._hideAllDropdowns();
       }
     });
+  },
+
+  _updateHistoryChip: function() {
+    try {
+      var raw = localStorage.getItem('walkroute_last');
+      if (raw) {
+        this._elements.historyChip.classList.remove('hidden');
+      } else {
+        this._elements.historyChip.classList.add('hidden');
+      }
+    } catch (e) {
+      this._elements.historyChip.classList.add('hidden');
+    }
   },
 
   _handleSearch: function(query, type) {
@@ -194,7 +216,7 @@ window.RouteApp.UI = {
   _handleMyLocation: function() {
     var self = this;
     if (!navigator.geolocation) {
-      this._showError('Geolocation is not supported by your browser.');
+      this._showError(RouteApp.I18n.t('noGeolocation'));
       return;
     }
 
@@ -209,8 +231,8 @@ window.RouteApp.UI = {
         });
       },
       function(error) {
-        var msg = 'Location unavailable.';
-        if (error.code === 1) msg = 'Location access denied.';
+        var msg = RouteApp.I18n.t('locationUnavailable');
+        if (error.code === 1) msg = RouteApp.I18n.t('locationDenied');
         self._showError(msg);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -234,7 +256,7 @@ window.RouteApp.UI = {
     var input = document.createElement('input');
     input.type = 'text';
     input.className = 'waypoint-input';
-    input.placeholder = 'Stop ' + (index + 1);
+    input.placeholder = RouteApp.I18n.t('stop') + ' ' + (index + 1);
     input.setAttribute('autocomplete', 'off');
 
     var dropdown = document.createElement('div');
@@ -243,9 +265,12 @@ window.RouteApp.UI = {
 
     var removeBtn = document.createElement('button');
     removeBtn.className = 'btn-remove-waypoint';
-    removeBtn.innerHTML = '&times;';
     removeBtn.title = 'Remove stop';
     removeBtn.setAttribute('data-index', index);
+    // Use Lucide X icon
+    var xIcon = document.createElement('i');
+    xIcon.setAttribute('data-lucide', 'x');
+    removeBtn.appendChild(xIcon);
 
     var debouncedSearch = RouteApp.Utils.debounce(function() {
       self._handleSearch(input.value, '' + index);
@@ -273,6 +298,11 @@ window.RouteApp.UI = {
 
     this._elements.waypointsContainer.appendChild(row);
 
+    // Re-render Lucide icons for the new button
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+
     if (this._waypointCount >= this._maxWaypoints) {
       this._elements.btnAddStop.classList.add('disabled');
     }
@@ -292,7 +322,7 @@ window.RouteApp.UI = {
     for (var i = 0; i < rows.length; i++) {
       rows[i].id = 'waypoint-row-' + i;
       var input = rows[i].querySelector('.waypoint-input');
-      if (input) input.placeholder = 'Stop ' + (i + 1);
+      if (input) input.placeholder = RouteApp.I18n.t('stop') + ' ' + (i + 1);
       var btn = rows[i].querySelector('.btn-remove-waypoint');
       if (btn) btn.setAttribute('data-index', i);
       var dd = rows[i].querySelector('.search-results');
@@ -306,7 +336,7 @@ window.RouteApp.UI = {
     var destination = RouteApp.Map.getDestination();
 
     if (!origin || !destination) {
-      this._showError('Please set both origin and destination.');
+      this._showError(RouteApp.I18n.t('setBothPoints'));
       return;
     }
 
@@ -328,10 +358,9 @@ window.RouteApp.UI = {
       self._showLoading(false);
       console.error('Routing error:', err);
 
-      // Show Haversine fallback
       var Utils = RouteApp.Utils;
       var straightLine = Utils.haversine(origin.lat, origin.lng, destination.lat, destination.lng);
-      self._showError(err.message + ' Straight-line distance: ' + straightLine.toFixed(1) + ' km');
+      self._showError(err.message + ' ' + RouteApp.I18n.t('straightLine') + ' ' + straightLine.toFixed(1) + ' km');
     });
   },
 
@@ -339,6 +368,10 @@ window.RouteApp.UI = {
     var Utils = RouteApp.Utils;
     var route = routeResult.routes[routeResult.selectedIndex];
     if (!route) return;
+
+    // Show results panel, hide history chip
+    this._elements.resultsPanel.classList.remove('hidden');
+    this._elements.historyChip.classList.add('hidden');
 
     // Update summary
     this._elements.routeDistance.textContent = Utils.formatDistance(route.distance);
@@ -374,7 +407,7 @@ window.RouteApp.UI = {
 
       var title = document.createElement('div');
       title.className = 'route-card-title';
-      title.textContent = 'Route ' + (i + 1);
+      title.textContent = RouteApp.I18n.t('route') + ' ' + (i + 1);
 
       var details = document.createElement('div');
       details.className = 'route-card-details';
@@ -385,7 +418,6 @@ window.RouteApp.UI = {
 
       card.addEventListener('click', function() {
         RouteApp.Map.selectRoute(i);
-        // Update active card styles
         container.querySelectorAll('.route-card').forEach(function(c) { c.classList.remove('active'); });
         card.classList.add('active');
       });
@@ -470,6 +502,9 @@ window.RouteApp.UI = {
       var data = JSON.parse(raw);
       if (!data.origin || !data.destination) return false;
 
+      // Hide chip immediately
+      this._elements.historyChip.classList.add('hidden');
+
       // Set markers
       RouteApp.Map.setMarker('origin', data.origin.lat, data.origin.lng);
       RouteApp.Map.setMarker('destination', data.destination.lat, data.destination.lng);
@@ -508,11 +543,13 @@ window.RouteApp.UI = {
     this._elements.waypointsContainer.innerHTML = '';
     this._waypointCount = 0;
     this._elements.btnAddStop.classList.remove('disabled');
+    this._elements.resultsPanel.classList.add('hidden');
     this._elements.routeSummary.classList.add('hidden');
     this._elements.routeAlternatives.classList.add('hidden');
     this._elements.routeAlternatives.innerHTML = '';
     this._elements.routeInstructions.innerHTML = '';
     this._hideAllDropdowns();
     this._hideError();
+    this._updateHistoryChip();
   }
 };

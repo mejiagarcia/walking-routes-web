@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 40" width="30" height="40">
+  <defs>
+    <filter id="shadow-a" x="-20%" y="-10%" width="140%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.716 23.284 0 15 0z" fill="#34A853" filter="url(#shadow-a)"/>
+  <circle cx="15" cy="14" r="9" fill="white" opacity="0.9"/>
+  <text x="15" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#34A853">A</text>
+</svg>

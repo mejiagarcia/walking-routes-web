@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WalkRoute - Pedestrian Route Calculator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="sidebar">
+    <div class="app-title">
+      <span class="icon">&#x1F6B6;</span>
+      <span>WalkRoute</span>
+    </div>
+
+    <div class="input-group">
+      <div class="input-row">
+        <div class="input-wrapper">
+          <input type="text" id="origin-input" placeholder="Origin" autocomplete="off" />
+          <div class="search-results" id="search-results-origin"></div>
+        </div>
+        <button class="btn-icon" id="btn-my-location" title="Use my location">&#x1F4CD;</button>
+      </div>
+
+      <div id="waypoints-container"></div>
+
+      <div class="input-wrapper">
+        <input type="text" id="destination-input" placeholder="Destination" autocomplete="off" />
+        <div class="search-results" id="search-results-destination"></div>
+      </div>
+    </div>
+
+    <button class="btn-text" id="btn-add-stop">+ Add stop</button>
+
+    <div class="actions-row">
+      <button class="btn-primary" id="btn-calculate">Calculate Route</button>
+      <button class="btn-outline" id="btn-clear">Clear</button>
+    </div>
+
+    <div id="route-alternatives" class="hidden"></div>
+
+    <div id="route-summary" class="hidden">
+      <div class="summary-title">Walking Summary</div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="metric-icon">&#x1F4CF;</span>
+          <span class="metric-value" id="route-distance">—</span>
+          <span class="metric-label">Distance</span>
+        </div>
+        <div class="summary-item">
+          <span class="metric-icon">&#x1F6B6;</span>
+          <span class="metric-value" id="route-duration">—</span>
+          <span class="metric-label">Walking Time</span>
+        </div>
+        <div class="summary-item">
+          <span class="metric-icon">&#x1F463;</span>
+          <span class="metric-value" id="route-steps-count">—</span>
+          <span class="metric-label">Est. Steps</span>
+        </div>
+        <div class="summary-item">
+          <span class="metric-icon">&#x1F525;</span>
+          <span class="metric-value" id="route-calories">—</span>
+          <span class="metric-label">Calories</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="route-instructions"></div>
+  </div>
+
+  <div id="map-container">
+    <div id="loading-indicator">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <div id="error-message"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/routing.js"></script>
+  <script src="js/geocoding.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -493,6 +493,66 @@ input[type="text"]::placeholder {
   transform: translateX(-50%) translateY(0);
 }
 
+/* App info */
+#app-info {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.btn-info-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.btn-info-toggle:hover {
+  opacity: 1;
+}
+
+.info-content {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.info-content.hidden {
+  display: none;
+}
+
+.info-content p {
+  margin-bottom: 8px;
+}
+
+.info-content ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-content li {
+  padding-left: 10px;
+  position: relative;
+}
+
+.info-content li::before {
+  content: '\2013';
+  position: absolute;
+  left: 0;
+  color: var(--border);
+}
+
+.info-content strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
 /* Animations */
 @keyframes spin {
   to { transform: rotate(360deg); }

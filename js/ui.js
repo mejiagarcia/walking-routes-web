@@ -69,6 +69,15 @@ window.RouteApp.UI = {
       self._addWaypointInput();
     });
 
+    // Info toggle
+    var btnInfo = document.getElementById('btn-info-toggle');
+    var infoContent = document.getElementById('info-content');
+    if (btnInfo && infoContent) {
+      btnInfo.addEventListener('click', function() {
+        infoContent.classList.toggle('hidden');
+      });
+    }
+
     // Keyboard support
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {

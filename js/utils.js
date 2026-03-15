@@ -25,7 +25,8 @@ window.RouteApp.Utils = {
     return R * c;
   },
 
-  decodePolyline: function(encoded) {
+  decodePolyline: function(encoded, precision) {
+    var factor = Math.pow(10, precision || 5);
     var coordinates = [];
     var index = 0;
     var lat = 0;
@@ -57,7 +58,7 @@ window.RouteApp.Utils = {
       var dlng = (result & 1) ? ~(result >> 1) : (result >> 1);
       lng += dlng;
 
-      coordinates.push([lat / 1e5, lng / 1e5]);
+      coordinates.push([lat / factor, lng / factor]);
     }
 
     return coordinates;
@@ -80,52 +81,21 @@ window.RouteApp.Utils = {
     return h + 'h ' + min + 'min';
   },
 
-  formatInstruction: function(step) {
-    var type = step.maneuver.type;
-    var modifier = step.maneuver.modifier || '';
-    var name = step.name || 'unnamed road';
-    var exit = step.maneuver.exit || '';
-
+  getManeuverIcon: function(type) {
+    // Valhalla maneuver types (numeric)
     switch (type) {
-      case 'depart':
-        return 'Head ' + (modifier || 'forward') + ' on ' + name;
-      case 'arrive':
-        return 'Arrive at destination';
-      case 'turn':
-        return 'Turn ' + modifier + ' onto ' + name;
-      case 'continue':
-        return 'Continue on ' + name;
-      case 'roundabout':
-        return 'At roundabout, take exit ' + exit + ' onto ' + name;
-      case 'merge':
-        return 'Merge onto ' + name;
-      case 'fork':
-        return 'Keep ' + modifier + ' onto ' + name;
-      case 'end of road':
-        return 'Turn ' + modifier + ' onto ' + name;
-      case 'new name':
-        return 'Continue onto ' + name;
-      case 'notification':
-        return 'Continue on ' + name;
-      default:
-        return 'Continue on ' + name;
-    }
-  },
-
-  getManeuverIcon: function(type, modifier) {
-    if (type === 'depart') return '\u{1F6B6}';
-    if (type === 'arrive') return '\u{1F3C1}';
-
-    switch (modifier) {
-      case 'straight': return '\u2191';
-      case 'slight right': return '\u2197';
-      case 'right': return '\u2192';
-      case 'sharp right': return '\u2198';
-      case 'uturn': return '\u2193';
-      case 'sharp left': return '\u2199';
-      case 'left': return '\u2190';
-      case 'slight left': return '\u2196';
-      default: return '\u2191';
+      case 1: case 2: case 3: return '\u{1F6B6}'; // Start
+      case 4: case 5: case 6: return '\u{1F3C1}'; // Destination
+      case 9: case 18: return '\u2197';  // Slight right
+      case 10: return '\u2192';           // Right
+      case 11: return '\u2198';           // Sharp right
+      case 12: return '\u2193';           // U-turn right
+      case 13: return '\u2193';           // U-turn left
+      case 14: return '\u2199';           // Sharp left
+      case 15: return '\u2190';           // Left
+      case 16: case 19: return '\u2196';  // Slight left
+      case 26: case 27: return '\u21BB';  // Roundabout
+      default: return '\u2191';           // Straight / continue
     }
   }
 };

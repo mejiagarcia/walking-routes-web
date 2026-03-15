@@ -2,73 +2,84 @@ window.RouteApp = window.RouteApp || {};
 
 window.RouteApp.Routing = {
 
+  _valhallaUrl: 'https://valhalla1.openstreetmap.de/route',
+
   calculateRoute: function(originLat, originLng, destLat, destLng, waypoints) {
     var Utils = RouteApp.Utils;
-    var coords = originLng + ',' + originLat;
+    var self = this;
+
+    var locations = [{ lat: originLat, lon: originLng }];
 
     if (waypoints && waypoints.length > 0) {
       for (var i = 0; i < waypoints.length; i++) {
-        coords += ';' + waypoints[i].lng + ',' + waypoints[i].lat;
+        locations.push({ lat: waypoints[i].lat, lon: waypoints[i].lng });
       }
     }
 
-    coords += ';' + destLng + ',' + destLat;
+    locations.push({ lat: destLat, lon: destLng });
 
-    var hasWaypoints = waypoints && waypoints.length > 0;
-    var url = 'https://router.project-osrm.org/route/v1/foot/' + coords +
-              '?overview=full&geometries=polyline&steps=true&annotations=true' +
-              (hasWaypoints ? '' : '&alternatives=3');
+    var body = {
+      locations: locations,
+      costing: 'pedestrian',
+      directions_options: { units: 'kilometers', language: 'en' },
+      alternates: 2
+    };
 
-    return fetch(url, {
-      headers: { 'Accept': 'application/json' }
+    return fetch(this._valhallaUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
     })
     .then(function(response) {
       if (!response.ok) {
-        throw new Error('Network error: ' + response.status);
+        return response.json().then(function(err) {
+          throw new Error(err.error || 'Routing failed: ' + response.status);
+        });
       }
       return response.json();
     })
     .then(function(data) {
-      if (data.code !== 'Ok') {
-        throw new Error(data.message || 'No route found between these points. Try a nearby road — OSRM may not support this area for pedestrian routing.');
+      var allTrips = [data.trip];
+
+      if (data.alternates) {
+        data.alternates.forEach(function(alt) {
+          if (alt.trip) allTrips.push(alt.trip);
+        });
       }
 
-      var routes = data.routes.map(function(route, index) {
-        var coordinates = Utils.decodePolyline(route.geometry);
+      var routes = allTrips.map(function(trip, index) {
+        var coordinates = [];
         var steps = [];
+        var totalDistance = 0;
+        var totalDuration = 0;
 
-        if (route.legs) {
-          route.legs.forEach(function(leg) {
-            if (leg.steps) {
-              leg.steps.forEach(function(step) {
-                steps.push({
-                  instruction: Utils.formatInstruction(step),
-                  distance: step.distance,
-                  duration: step.duration,
-                  maneuver: step.maneuver,
-                  name: step.name,
-                  icon: Utils.getManeuverIcon(step.maneuver.type, step.maneuver.modifier)
-                });
+        trip.legs.forEach(function(leg) {
+          // Valhalla uses precision 6 for encoded polyline
+          var legCoords = Utils.decodePolyline(leg.shape, 6);
+          coordinates = coordinates.concat(legCoords);
+
+          if (leg.maneuvers) {
+            leg.maneuvers.forEach(function(maneuver) {
+              steps.push({
+                instruction: maneuver.instruction,
+                distance: maneuver.length * 1000, // km to meters
+                duration: maneuver.time,
+                icon: Utils.getManeuverIcon(maneuver.type)
               });
-            }
-          });
-        }
+            });
+          }
 
-        // OSRM public server returns car-speed durations even for foot profile.
-        // Override with realistic walking duration: 5 km/h = 83.33 m/min
-        var walkingSpeed = 83.33; // meters per minute
-        var walkingDuration = (route.distance / walkingSpeed) * 60; // seconds
-
-        // Also fix per-step durations proportionally
-        var osrmTotal = route.duration || 1;
-        steps.forEach(function(s) {
-          s.duration = (s.distance / walkingSpeed) * 60;
+          totalDistance += leg.summary.length * 1000; // km to meters
+          totalDuration += leg.summary.time;
         });
 
         return {
           coordinates: coordinates,
-          distance: route.distance,
-          duration: walkingDuration,
+          distance: totalDistance,
+          duration: totalDuration,
           isMain: index === 0,
           steps: steps
         };
